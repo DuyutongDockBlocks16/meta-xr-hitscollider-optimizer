@@ -55,21 +55,3 @@ Greatly appreciate their work in advancing finger pointing estimation techniques
 
 ## Contact
 For any questions or discussions, feel free to open an issue or contact me via GitHub!
-
-# Technical Principles
-
-## Overview
-This part explains the technical principles behind our optimization of the `HitsCollider` method in `com.meta.xr.sdk.interaction@66.0.0`. Our approach is inspired by the findings of *Recognition and Estimation of Human Finger Pointing with an RGB Camera for Robot Directive* and aims to improve object-pointing accuracy in VR/AR environments.
-
-All the pictures used this part is provided by the paper **"Recognition and Estimation of Human Finger Pointing with an RGB Camera for Robot Directive"**
-
-## Human Pointing Methods
-The referenced research paper discusses three primary human pointing methods:
-
-1. **Finger Pointing** - The direction is determined solely by the index finger orientation.
-2. **Forearm Pointing** - The pointing direction is calculated based on the forearm’s alignment.
-3. **Eyes-Finger Pointing** - The pointing direction is derived from the alignment between the user’s eyes and the pointing finger.
-![img.png](technical_principles_pics/pointing_methods.png)
-
-Among these three methods, **Eyes-Finger Pointing** demonstrated the best performance in terms of both accuracy and lower standard deviation of error. This suggests that the natural coordination between eye gaze and finger position provides a more reliable pointing estimation.
-![img.png](technical_principles_pics/pointing_accuracy.png)
