@@ -92,7 +92,6 @@ namespace Oculus.Interaction
 
             foreach (Collider collider in colliders)
             {
-                // float score = 0;
                 if (!searchFrustrum.HitsCollider(collider, out float score, out Vector3 hitPoint))
                 {
                     continue;

@@ -119,6 +119,8 @@ namespace Oculus.Interaction
 
         public bool IsPointInConeFrustum(Vector3 point)
         {
+            //DrawConicalFrustum();
+
             Vector3 coneOriginToPoint = point - this.transform.position;
             Vector3 pointProjection = Vector3.Project(coneOriginToPoint, Direction);
             if(Vector3.Dot(pointProjection, Direction) < 0)
@@ -148,11 +150,25 @@ namespace Oculus.Interaction
 
         public bool HitsCollider(Collider collider, out float score, out Vector3 point)
         {
+            /*
+            NOTE:
+            Project the frustum's center to the same x level as the object position,
+            only compute distance in yz plane
+             */
+            // Debug.Log("HitsCollider");
+
             Vector3 centerPosition = collider.bounds.center;
             Vector3 projectedCenter = Pose.position
                 + Vector3.Project(centerPosition - Pose.position, Pose.forward);
 
+            // Debug.Log($"Pose.position: {Pose.position}, Pose.forward: {Pose.forward}, projectedCenter: {projectedCenter}, centerPosition: {centerPosition}");
+            // float distance = Vector3.Distance(centerPosition, Pose.position);
+            // Debug.Log("Distance: " + distance);
+
+
+            // The closest point to the bounding box of the attached collider.
             point = collider.ClosestPointOnBounds(projectedCenter);
+            // Debug.Log($"point: {point}");
 
             if (!IsPointInConeFrustum(point))
             {
@@ -161,7 +177,14 @@ namespace Oculus.Interaction
             }
 
             Vector3 originToInteractable = point - Pose.position;
+            // Debug.Log($"originToInteractable: {originToInteractable}");
+            /*
+             * Vector3.Angle: Calculates the angle between vectors from and.
+             * When normalized, a vector keeps the same direction but its length is 1.0,
+             * so that the occlusion issue is considered.
+            */
             float angleToInteractable = Vector3.Angle(originToInteractable.normalized, Pose.forward);
+            // Reflects the direction of the object relative to the central axis of the viewing cone
             score = 1f - Mathf.Clamp01(angleToInteractable / _apertureDegrees);
             return true;
         }
@@ -176,10 +199,10 @@ namespace Oculus.Interaction
         {
             return Pose.position;
         }
-            
+
 
         public bool HitsColliderGaussianPureHand(Collider collider, out float score, out Vector3 point)
-        {   
+        {
             // get hand's(wrist) position and forward
             Vector3 handPosition = Pose.position;
             Vector3 handDirection = Pose.forward;
@@ -194,7 +217,14 @@ namespace Oculus.Interaction
 
             // DrawPoint(point);
 
+            // Debug.Log($"point++++: {point}");
+
+
             score = CalculateGaussianProbability(point, centerPosition, sigma);
+
+            // Debug.Log($"score++++: {score}");
+
+            //DrawGaussianCircle(centerPosition, circleResolution, sigma);
 
             if (score == 0)
             {
@@ -205,7 +235,7 @@ namespace Oculus.Interaction
         }
 
         public bool HitsColliderGaussianHeadHand(Vector3 headPosition, Collider collider, out float score, out Vector3 point)
-        {   
+        {
             // get hand's(wrist) position and forward
             Vector3 handPosition = Pose.position;
             Vector3 headHandDirection = handPosition - headPosition;
@@ -214,7 +244,7 @@ namespace Oculus.Interaction
             // int circleResolution = 8;
             float sigma = 0.4f;
 
-            // get object center
+            // get obect center
             Vector3 centerPosition = collider.bounds.center;
 
             // calculate the intersection of hand and plane
@@ -222,7 +252,14 @@ namespace Oculus.Interaction
 
             // DrawPoint(point);
 
+            // Debug.Log($"point++++: {point}");
+
+
             score = CalculateGaussianProbability(point, centerPosition, sigma);
+
+            // Debug.Log($"score++++: {score}");
+
+            //DrawGaussianCircle(centerPosition, circleResolution, sigma);
 
             if (score == 0)
             {
@@ -233,21 +270,31 @@ namespace Oculus.Interaction
         }
 
         public bool HitsColliderGaussianBodyHand(Vector3 bodyPosition, Collider collider, out float score, out Vector3 point)
-        {   
+        {
             // get hand's(wrist) position and forward
             Vector3 handPosition = Pose.position;
             Vector3 bodyHandDirection = handPosition - bodyPosition;
             Vector3 normalizedBodyHandDirection = bodyHandDirection.normalized;
 
+            // int circleResolution = 8;
             float sigma = 0.4f;
 
+            // get obect center
             Vector3 centerPosition = collider.bounds.center;
 
+            // calculate the intersection of hand and plane
             point = CalculateIntersection(handPosition, normalizedBodyHandDirection, centerPosition);
 
             // DrawPoint(point);
 
+            // Debug.Log($"point++++: {point}");
+
+
             score = CalculateGaussianProbability(point, centerPosition, sigma);
+
+            // Debug.Log($"score++++: {score}");
+
+            //DrawGaussianCircle(centerPosition, circleResolution, sigma);
 
             if (score == 0)
             {
@@ -260,15 +307,15 @@ namespace Oculus.Interaction
 
         private Vector3 CalculateIntersection(Vector3 handPosition, Vector3 handDirection, Vector3 centerPosition)
         {
-            float planeY = centerPosition.y;
+            float planeZ = centerPosition.z;
 
 
-            float lambda = (planeY - handPosition.y) / handDirection.y;
+            float lambda = (planeZ - handPosition.z) / handDirection.z;
             float x = handPosition.x + lambda * handDirection.x;
-            float z = handPosition.z + lambda * handDirection.z;
-            float y = centerPosition.y;
+            float z = centerPosition.z;
+            float y = handPosition.y + lambda * handDirection.y;
 
-            return new Vector3(x, planeY, z); // return intersection
+            return new Vector3(x, y, planeZ); // return intersection
         }
 
         private float CalculateGaussianProbability(Vector3 point, Vector3 mean, float sigma)
@@ -283,8 +330,8 @@ namespace Oculus.Interaction
             Renderer renderer = sphere.GetComponent<MeshRenderer>();
             renderer.material.color = Color.red;
             sphere.transform.position = point;
-            sphere.transform.localScale = new Vector3(0.05f, 0.05f, 0.05f); 
-            Destroy(sphere, 0.3f);
+            sphere.transform.localScale = new Vector3(0.05f, 0.05f, 0.05f);
+            Destroy(sphere, 0.2f);
         }
 
         private void DrawGaussianCircle(Vector3 center, int circleResolution, float sigma)
@@ -299,7 +346,7 @@ namespace Oculus.Interaction
 
                 GameObject sphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
                 sphere.transform.position = spherePosition;
-                sphere.transform.localScale = new Vector3(0.1f, 0.1f, 0.1f); 
+                sphere.transform.localScale = new Vector3(0.1f, 0.1f, 0.1f);
             }
         }
 
@@ -317,6 +364,29 @@ namespace Oculus.Interaction
             score = 1f - Mathf.Clamp01(vectorAngle / _apertureDegrees);
 
             return point;
+        }
+
+        private void OnDrawGizmosSelected()
+        {
+            // DrawConicalFrustum();
+        }
+
+        void DrawConicalFrustum()
+        {
+            Handles.color = Color.red;
+            Handles.DrawSolidArc(transform.position, -transform.up, transform.forward, _apertureDegrees * 0.5f, _maxLength);
+
+            float radiusEnd = ConeFrustumRadiusAtLength(_maxLength);
+            Handles.DrawWireDisc(EndPoint, -transform.right, radiusEnd);
+
+            float step = _maxLength / 10.0f;
+            for (float t = step; t <= _maxLength; t += step)
+            {
+                float radius = ConeFrustumRadiusAtLength(t);
+                Handles.DrawWireArc(transform.position, -transform.up, transform.position + transform.forward * t, _apertureDegrees * 0.5f, radius);
+            }
+
+            Handles.DrawWireDisc(transform.position, -transform.right, _radiusStart);
         }
     }
 }
